@@ -25,16 +25,16 @@ import json
 import os
 
 file = open("token.txt", "r")
-client = file.readline()
-secret = file.readline()
+client = file.readline().strip()
+secret = file.readline().strip()
 
 username = ''
 scope = 'user-library-read playlist-modify-public playlist-read-collaborative playlist-read-private user-modify-playback-state user-read-playback-state'
 
 token = util.prompt_for_user_token(username,
                                     scope,
-                                    client_id = client[:-1],
-                                    client_secret = secret[:-1],
+                                    client_id = client,
+                                    client_secret = secret,
                                     redirect_uri = 'http://127.0.0.1:8080'
                                    )
 
@@ -53,6 +53,8 @@ def load_user_playlists(): #TO DO: MAKE SEPARATE FUNCTIONS FOR PLAYLISTS AND TRA
     while True:
         for i in range(len(results['items'])):
             playlist = results['items'][i]
+            if len(playlist) == 0:
+                break
             playlist_name = playlist['name']
             playlist_description = playlist['description']
             playlist_id = playlist['id']
@@ -405,7 +407,14 @@ class MainWindow(QMainWindow):
         def play_from_playlist():
             track_num = self.tracks.currentRow()
             id = playlist[2]
-            spotify.start_playback(spotify.devices()['devices'][0]['id'], "spotify:playlist:" + id, offset = {"position": track_num})
+            try:
+                spotify.start_playback(spotify.devices()['devices'][0]['id'], "spotify:playlist:" + id, offset = {"position": track_num})
+            except:
+                msgBox = QMessageBox()
+                msgBox.setIcon(QMessageBox.Critical)
+                msgBox.setStandardButtons(QMessageBox.Ok)
+                msgBox.setText("You must have Spotify Premium to play specific tracks!")
+                msgBox.exec_()
         return play_from_playlist
 
     def checkDuplicate(self, name):
