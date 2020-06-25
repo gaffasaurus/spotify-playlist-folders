@@ -5,7 +5,6 @@ import spotipy.util as util
 import sys
 
 from dotenv import load_dotenv
-load_dotenv()
 
 from PyQt5.QtWidgets import (QWidget, QSlider, QLineEdit, QLabel, QPushButton, QScrollArea, QApplication,
                              QHBoxLayout, QVBoxLayout, QGridLayout, QMainWindow, QLineEdit, QMessageBox, QSizePolicy, QFrame,
