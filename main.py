@@ -28,7 +28,7 @@ file = open("token.txt", "r")
 client = file.readline()
 secret = file.readline()
 
-username = 'backspace9845'
+username = ''
 scope = 'user-library-read playlist-modify-public playlist-read-collaborative playlist-read-private user-modify-playback-state user-read-playback-state'
 
 token = util.prompt_for_user_token(username,
@@ -241,8 +241,8 @@ class MainWindow(QMainWindow):
         self.playlists = ListWidget()
         self.folders = TreeWidget()
 
-        # self.playlists.setMaximumWidth(425)
-        # self.folders.setMaximumWidth(425)
+        self.playlists.setMaximumWidth(425)
+        self.folders.setMaximumWidth(425)
 
         self.folders.setHeaderLabels(["Drag playlists from above into the folders"])
         self.folders.setStyleSheet("")
@@ -520,7 +520,7 @@ class MainWindow(QMainWindow):
                             break
                     folder.setText(0, name)
                     updateJSON()
-
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 app = QtWidgets.QApplication(sys.argv)
 mainWin = MainWindow()
 mainWin.show()
