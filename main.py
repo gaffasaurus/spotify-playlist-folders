@@ -123,7 +123,6 @@ user_playlists['images'] = load_images()
 
 save_data = {'folders': []}
 
-
 def updateJSON():
     with open("data.json", "w") as outfile:
         json.dump(save_data, outfile)
@@ -237,6 +236,7 @@ class MainWindow(QMainWindow):
         self.manageWidgets()
 
     def manageWidgets(self):
+        global save_data
 
         self.playlists = ListWidget()
         self.folders = TreeWidget()
@@ -257,18 +257,20 @@ class MainWindow(QMainWindow):
             self.playlists.addItem(item)
             playlists.append(item)
 
+        print(save_data)
         #Load saved data
         data = readJSON()
-        print(data)
         if data != "empty":
-            for i in range(len(data)):
+            for i in range(len(data['folders'])):
                 folder = QTreeWidgetItem(self.folders)
                 folder.setText(0, data['folders'][i][0])
                 self.folders.addTopLevelItem(folder)
                 for j in range(1, len(data['folders'][i])):
                     playlist = QTreeWidgetItem(folder)
                     playlist.setText(0, data['folders'][i][j])
-            save_data['folders'] = data
+            save_data = data
+
+        print(save_data)
 
         self.playlists.itemClicked.connect(self.make_display_playlist_info(0))
 
@@ -447,14 +449,14 @@ class MainWindow(QMainWindow):
                 msgBox.setText("Are you sure you want to remove \'" + item.text(0) + "\' from \'" + item.parent().text(0) + "\'?")
                 retval = msgBox.exec_()
                 if retval == 1024:
-                    item.parent().takeChild(item.parent().indexOfChild(item))
-                    print(save_data['folders'])
+                    print(save_data)
                     for i in range(len(save_data['folders'])):
                         print(save_data['folders'][i])
                         folder_name = save_data['folders'][i][0]
                         if item.parent().text(0) == folder_name:
                             save_data['folders'][i].remove(item.text(0))
                             break
+                    item.parent().takeChild(item.parent().indexOfChild(item))
                     updateJSON()
                 elif retval == 4194304:
                     return
@@ -495,12 +497,21 @@ class MainWindow(QMainWindow):
                 text, ok = QInputDialog.getText(self, "Rename Folder", "New name for folder:")
                 if ok:
                     name = str(text)
-                    folder.setText(0, name)
                     for i in range(len(save_data['folders'])):
                         folder_name = save_data['folders'][i][0]
+                        msgBox.setText("Folder with that name already exists!")
+                        if name == folder_name:
+                            msgBox.exec_()
+                            return
                         if oldName == folder_name:
+                            for j in range(i, len(save_data['folders'])):
+                                check_duplicate_folder_name = save_data['folders'][j][0]
+                                if name == check_duplicate_folder_name:
+                                    msgBox.exec_()
+                                    return
                             save_data['folders'][i][0] = name
                             break
+                    folder.setText(0, name)
                     updateJSON()
 
 app = QtWidgets.QApplication(sys.argv)
