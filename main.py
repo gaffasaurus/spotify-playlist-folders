@@ -32,8 +32,8 @@ scope = 'user-library-read playlist-modify-public playlist-read-collaborative pl
 
 token = util.prompt_for_user_token(username,
                                     scope,
-                                    client_id = 'ffedc7da3987413d9299c6f027014df6',
-                                    client_secret = 'ecbbe97f39574850887046b1d1a4658d',
+                                    client_id = client,
+                                    client_secret = secret,
                                     redirect_uri = 'http://127.0.0.1:8080'
                                    )
 
@@ -102,7 +102,7 @@ def load_images():
         response = requests.get(user_playlists['playlists'][i][3])
         img = Image.open(BytesIO(response.content))
         img = img.convert("RGBA")
-        basewidth = 200
+        basewidth = 250
         wpercent = (basewidth/float(img.size[0]))
         hsize = int((float(img.size[1])*float(wpercent)))
         img = img.resize((basewidth,hsize), Image.ANTIALIAS)
