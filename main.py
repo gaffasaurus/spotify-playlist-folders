@@ -25,15 +25,16 @@ import json
 import os
 
 file = open("token.txt", "r")
-client = str(file.readline())
-secret = str(file.readline())
-username = ''
+client = file.readline()
+secret = file.readline()
+
+username = 'backspace9845'
 scope = 'user-library-read playlist-modify-public playlist-read-collaborative playlist-read-private user-modify-playback-state user-read-playback-state'
 
 token = util.prompt_for_user_token(username,
                                     scope,
-                                    client_id = client,
-                                    client_secret = secret,
+                                    client_id = client[:-1],
+                                    client_secret = secret[:-1],
                                     redirect_uri = 'http://127.0.0.1:8080'
                                    )
 
@@ -112,7 +113,7 @@ def load_images():
         sys.stdout.write('\r')
         # the exact output you're looking for:
         sys.stdout.write(str(i+1) + "/" + str(len(user_playlists['playlists'])) + " images loaded")
-    print("Images loaded\n")
+    print("\nImages loaded\n")
     print("Launching program...")
     return images
 
@@ -214,7 +215,6 @@ class ListWidget(QListWidget):
             return
         else:
             mime_data.setText(self.itemAt(e.pos()).text())
-            print(mime_data.text())
             drag = QDrag(self)
             drag.setMimeData(mime_data)
             drag.exec_(Qt.CopyAction)
@@ -257,7 +257,6 @@ class MainWindow(QMainWindow):
             self.playlists.addItem(item)
             playlists.append(item)
 
-        print(save_data)
         #Load saved data
         data = readJSON()
         if data != "empty":
@@ -269,8 +268,6 @@ class MainWindow(QMainWindow):
                     playlist = QTreeWidgetItem(folder)
                     playlist.setText(0, data['folders'][i][j])
             save_data = data
-
-        print(save_data)
 
         self.playlists.itemClicked.connect(self.make_display_playlist_info(0))
 
@@ -345,12 +342,17 @@ class MainWindow(QMainWindow):
             image = user_playlists['images'][ix]
             title = QLabel(playlist[0])
             title.setFont(QFont('Arial', 24))
-            desc_text = ""
-            for i in range(len(playlist[1].split())):
-                desc_text += playlist[1].split()[i] + " "
-                if i > 0 and i % 9 == 0:
-                    desc_text += "\n"
-            desc = QLabel(desc_text)
+            self.desc_text = ""
+            for i in range(len(list(playlist[1]))):
+                self.desc_text += list(playlist[1])[i]
+                if i > 0 and i % 45 == 0:
+                    self.desc_text += "\n"
+            if len(self.desc_text) < 70:
+                desc = QLabel(self.desc_text)
+            else:
+                desc = QLabel(self.desc_text[:70] + "...")
+                desc.installEventFilter(self)
+            desc.setAlignment(Qt.AlignCenter)
             desc.setFont(QFont('Arial', 12))
             img = QLabel(self)
             q_img = ImageQt(image)
@@ -383,6 +385,13 @@ class MainWindow(QMainWindow):
             helper['widgets'].append(img)
             helper['widgets'].append(play)
         return display_playlist_info
+
+    def eventFilter(self, source, e):
+        if e.type() == QEvent.Enter:
+            source.setText(self.desc_text)
+        elif e.type() == QEvent.Leave:
+            source.setText(self.desc_text[:70] + "...")
+        return False
 
     @pyqtSlot()
     def make_play_playlist(self, playlist):
@@ -449,9 +458,7 @@ class MainWindow(QMainWindow):
                 msgBox.setText("Are you sure you want to remove \'" + item.text(0) + "\' from \'" + item.parent().text(0) + "\'?")
                 retval = msgBox.exec_()
                 if retval == 1024:
-                    print(save_data)
                     for i in range(len(save_data['folders'])):
-                        print(save_data['folders'][i])
                         folder_name = save_data['folders'][i][0]
                         if item.parent().text(0) == folder_name:
                             save_data['folders'][i].remove(item.text(0))
