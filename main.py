@@ -53,12 +53,13 @@ def load_user_playlists(): #TO DO: MAKE SEPARATE FUNCTIONS FOR PLAYLISTS AND TRA
     while True:
         for i in range(len(results['items'])):
             playlist = results['items'][i]
-            if len(playlist) == 0:
-                break
             playlist_name = playlist['name']
             playlist_description = playlist['description']
             playlist_id = playlist['id']
-            playlist_art = playlist['images'][0]['url']
+            try:
+                playlist_art = playlist['images'][0]['url']
+            except:
+                playlist_art = 'https://cdn.discordapp.com/attachments/710932856809193497/725821593653346406/unknown.png'
             playlist_info = (playlist_name, playlist_description, playlist_id, playlist_art)
             playlists.append(playlist_info)
         increment += 50
@@ -247,7 +248,6 @@ class MainWindow(QMainWindow):
         self.folders.setMaximumWidth(425)
 
         self.folders.setHeaderLabels(["Drag playlists from above into the folders"])
-        self.folders.setStyleSheet("")
 
         self.playlists.setSpacing(5)
         self.playlists.setDragEnabled(True)
