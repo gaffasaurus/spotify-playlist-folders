@@ -25,16 +25,15 @@ import json
 import os
 
 file = open("token.txt", "r")
-client = file.readline()
-secret = file.readline()
+client = str(file.readline())
+secret = str(file.readline())
 username = ''
 scope = 'user-library-read playlist-modify-public playlist-read-collaborative playlist-read-private user-modify-playback-state user-read-playback-state'
 
-print(client + ", " + secret)
 token = util.prompt_for_user_token(username,
                                     scope,
-                                    client_id = client,
-                                    client_secret = secret,
+                                    client_id = 'ffedc7da3987413d9299c6f027014df6',
+                                    client_secret = 'ecbbe97f39574850887046b1d1a4658d',
                                     redirect_uri = 'http://127.0.0.1:8080'
                                    )
 
@@ -122,7 +121,7 @@ user_playlists['images'] = load_images()
 
 #user_playlists CONTENTS: {'playlists': list of tuples containing playlist info, 'tracks': dictionary of lists of tuples containing track name and id, 'images': image files of playlist art}
 
-save_data = []
+save_data = {'folders': []}
 
 
 def updateJSON():
@@ -195,12 +194,12 @@ class TreeWidget(QTreeWidget):
                     return
             child = QTreeWidgetItem(item.parent())
         child.setText(0, e.mimeData().text())
-        for i in range(len(save_data)):
+        for i in range(len(save_data['folders'])):
             if child.text(0) == "":
                 break
-            folder_name = save_data[i][0]
+            folder_name = save_data['folders'][i][0]
             if child.parent().text(0) == folder_name:
-                save_data[i].append(child.text(0)) #Add child to save data
+                save_data['folders'][i].append(child.text(0)) #Add child to save data
                 break
         updateJSON()
 
@@ -260,15 +259,16 @@ class MainWindow(QMainWindow):
 
         #Load saved data
         data = readJSON()
+        print(data)
         if data != "empty":
             for i in range(len(data)):
                 folder = QTreeWidgetItem(self.folders)
-                folder.setText(0, data[i][0])
+                folder.setText(0, data['folders'][i][0])
                 self.folders.addTopLevelItem(folder)
-                for j in range(1, len(data[i])):
+                for j in range(1, len(data['folders'][i])):
                     playlist = QTreeWidgetItem(folder)
-                    playlist.setText(0, data[i][j])
-            save_data = data
+                    playlist.setText(0, data['folders'][i][j])
+            save_data['folders'] = data
 
         self.playlists.itemClicked.connect(self.make_display_playlist_info(0))
 
@@ -317,11 +317,7 @@ class MainWindow(QMainWindow):
                 for i in range(self.folders.topLevelItemCount()):
                     if self.folders.currentItem() == self.folders.topLevelItem(i):
                         return
-            widgets = helper['widgets']
-            if len(widgets) > 0:
-                self.removeWidgets(widgets)
-            widgets = []
-
+            ix = -1
             if num == 0:
                 ix = self.playlists.currentRow()
             elif num == 1:
@@ -331,6 +327,18 @@ class MainWindow(QMainWindow):
                     if name == playlist[0]:
                         ix = i
                         break
+            if ix == -1:
+                msgBox = QMessageBox()
+                msgBox.setIcon(QMessageBox.Critical)
+                msgBox.setStandardButtons(QMessageBox.Ok)
+                msgBox.setText("This playlist was deleted from your account or is otherwise inaccessible.")
+                msgBox.exec_()
+                return
+            widgets = helper['widgets']
+            if len(widgets) > 0:
+                self.removeWidgets(widgets)
+            widgets = []
+
             playlist = user_playlists['playlists'][ix]
             image = user_playlists['images'][ix]
             title = QLabel(playlist[0])
@@ -411,7 +419,7 @@ class MainWindow(QMainWindow):
             self.folders.addTopLevelItem(new_folder)
             new_folder.setText(0, folder_name)
             new_folder.setExpanded(True)
-            save_data.append([new_folder.text(0)])
+            save_data['folders'].append([new_folder.text(0)])
             updateJSON()
 
 
@@ -440,10 +448,12 @@ class MainWindow(QMainWindow):
                 retval = msgBox.exec_()
                 if retval == 1024:
                     item.parent().takeChild(item.parent().indexOfChild(item))
-                    for i in range(len(save_data)):
-                        folder_name = save_data[i][0]
+                    print(save_data['folders'])
+                    for i in range(len(save_data['folders'])):
+                        print(save_data['folders'][i])
+                        folder_name = save_data['folders'][i][0]
                         if item.parent().text(0) == folder_name:
-                            save_data[i].remove(item.text(0))
+                            save_data['folders'][i].remove(item.text(0))
                             break
                     updateJSON()
                 elif retval == 4194304:
@@ -453,10 +463,10 @@ class MainWindow(QMainWindow):
                 if retval == 1024: #Pressed OK
                     item.takeChildren()
                     self.folders.takeTopLevelItem(self.folders.indexOfTopLevelItem(item))
-                    for i in range(len(save_data)):
-                        folder_name = save_data[i][0]
+                    for i in range(len(save_data['folders'])):
+                        folder_name = save_data['folders'][i][0]
                         if item.text(0) == folder_name:
-                            save_data.pop(i)
+                            save_data['folders'].pop(i)
                             break
                     updateJSON()
                 elif retval == 4194304:
@@ -486,10 +496,10 @@ class MainWindow(QMainWindow):
                 if ok:
                     name = str(text)
                     folder.setText(0, name)
-                    for i in range(len(save_data)):
-                        folder_name = save_data[i][0]
+                    for i in range(len(save_data['folders'])):
+                        folder_name = save_data['folders'][i][0]
                         if oldName == folder_name:
-                            save_data[i][0] = name
+                            save_data['folders'][i][0] = name
                             break
                     updateJSON()
 
