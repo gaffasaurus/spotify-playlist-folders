@@ -241,8 +241,8 @@ class MainWindow(QMainWindow):
         self.playlists = ListWidget()
         self.folders = TreeWidget()
 
-        self.playlists.setMaximumWidth(425)
-        self.folders.setMaximumWidth(425)
+        # self.playlists.setMaximumWidth(425)
+        # self.folders.setMaximumWidth(425)
 
         self.folders.setHeaderLabels(["Drag playlists from above into the folders"])
         self.folders.setStyleSheet("")
@@ -304,7 +304,7 @@ class MainWindow(QMainWindow):
         # button.move(190, 65)
 
         self.setWindowTitle('Spotify Playlist Folders')
-        self.setGeometry(165, 0, 950, 800)
+        self.setGeometry(90, 50, 1100, 800)
 
     def removeWidgets(self, widgets):
         for i in range(len(widgets)):
