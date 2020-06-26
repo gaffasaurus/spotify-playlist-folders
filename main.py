@@ -37,9 +37,23 @@ token = util.prompt_for_user_token(username,
                                     redirect_uri = 'http://127.0.0.1:8080'
                                    )
 
+
+
+
 spotify = spotipy.Spotify(auth = token)
 
 user_playlists = {}
+def updateCache():
+    with open("cache.json", "w") as outfile:
+        merge = {'playlists': user_playlists['playlists'], 'tracks': user_playlists['tracks']}
+        json.dump(merge, outfile)
+def readCache():
+    with open("cache.json") as json_file:
+        try:
+            data = json.load(json_file)
+        except:
+            return "empty"
+        return data
 
 def load_user_playlists(): #TO DO: MAKE SEPARATE FUNCTIONS FOR PLAYLISTS AND TRACKS PLEASE
     print("Loading playlists...")
@@ -69,7 +83,10 @@ def load_user_playlists(): #TO DO: MAKE SEPARATE FUNCTIONS FOR PLAYLISTS AND TRA
             stop = True
     return playlists
 
-user_playlists['playlists'] = load_user_playlists()
+if readCache() == "empty":
+    user_playlists['playlists'] = load_user_playlists()
+else:
+    user_playlists['playlists'] = readCache()['playlists']
 # print(user_playlists['playlists'])
 
 def load_playlist_tracks():
@@ -99,7 +116,10 @@ def load_playlist_tracks():
                 stop = True
     return playlist_tracks
 
-user_playlists['tracks'] = load_playlist_tracks()
+if readCache() == "empty":
+    user_playlists['tracks'] = load_playlist_tracks()
+else:
+    user_playlists['tracks'] = readCache()['tracks']
 
 def load_images():
     print("Loading images...")
@@ -118,13 +138,13 @@ def load_images():
         sys.stdout.write('\r')
         sys.stdout.write(str(i+1) + "/" + str(len(user_playlists['playlists'])) + " images loaded")
     print("\nImages loaded\n")
-    print("Launching program...")
     return images
 
 user_playlists['images'] = load_images()
 #print(user_playlists['images'])
 
 #user_playlists CONTENTS: {'playlists': list of tuples containing playlist info, 'tracks': dictionary of lists of tuples containing track name and id, 'images': image files of playlist art}
+updateCache()
 
 save_data = {'folders': []}
 
@@ -279,6 +299,7 @@ class MainWindow(QMainWindow):
         self.folders.itemDoubleClicked.connect(self.make_display_playlist_info(1))
 
         update_playlists = QPushButton("Update Playlists")
+        update_label = QLabel("(Always update after making changes in Spotify!)")
         playlists_header = QLabel("My Playlists:")
         folders_header = QLabel("My Folders:")
 
@@ -292,9 +313,12 @@ class MainWindow(QMainWindow):
         delete_folder.clicked.connect(self.removeItem)
         rename_folder.clicked.connect(self.renameFolder)
 
+        self.vbox = QVBoxLayout()
         self.hbox = QHBoxLayout()
 
-        self.grid.addWidget(update_playlists, 0, 1, alignment = Qt.AlignCenter)
+        self.grid.addLayout(self.vbox, 0, 1)
+        self.vbox.addWidget(update_playlists, alignment = Qt.AlignCenter)
+        self.vbox.addWidget(update_label, alignment = Qt.AlignCenter)
         self.grid.addWidget(playlists_header, 1, 1)
         self.grid.addWidget(self.playlists, 2, 1)
         self.grid.addWidget(folders_header, 3, 1)
@@ -323,6 +347,7 @@ class MainWindow(QMainWindow):
         user_playlists['playlists'] = load_user_playlists()
         user_playlists['tracks'] = load_playlist_tracks()
         user_playlists['images'] = load_images()
+        updateCache()
         self.playlists.clear()
         for i in range(len(user_playlists['playlists'])): #Show user playlists
             item = QListWidgetItem(user_playlists['playlists'][i][0], self.playlists)
