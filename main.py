@@ -41,8 +41,10 @@ token = util.prompt_for_user_token(username,
 
 
 spotify = spotipy.Spotify(auth = token)
-
 user_playlists = {}
+def clearCache():
+    with open("cache.json", "w") as outfile:
+        json.dump(None, outfile)
 def updateCache():
     with open("cache.json", "w") as outfile:
         merge = {'playlists': user_playlists['playlists'], 'tracks': user_playlists['tracks']}
@@ -104,8 +106,11 @@ def load_playlist_tracks():
                     break
                 track_name = track['name']
                 track_id = track['id']
+                track_artists = []
+                for k in range(len(track['album']['artists'])):
+                    track_artists.append(track['album']['artists'][k]['name'])
                 if track_id != None:
-                    track_info = (track_name, track_id)
+                    track_info = (track_name, track_id, track_artists)
                     tracks.append(track_info)
             increment += 50
             results = spotify.playlist_tracks(user_playlists['playlists'][i][2], limit = 50, offset = increment)
@@ -253,6 +258,8 @@ class MainWindow(QMainWindow):
     def initUI(self):
         self.widget = QWidget()
         self.grid = QGridLayout()
+
+        self.grid.setSpacing(5)
 
         self.setWindowState(Qt.WindowMaximized)
 
@@ -412,21 +419,39 @@ class MainWindow(QMainWindow):
             play = QPushButton("►   Play Playlist")
             play.clicked.connect(self.make_play_playlist(playlist))
 
+            self.search = QLineEdit(self)
+            self.search.returnPressed.connect(self.make_search_tracks(playlist))
+            self.search.setMaximumWidth(450)
+
+            clear = QPushButton("Clear")
+            clear.clicked.connect(self.make_clear_search(playlist))
+            clear.setMaximumWidth(80)
+
             self.tracks = QListWidget()
             self.tracks.setMaximumWidth(530)
             self.tracks.setSpacing(5)
 
+            self.vbox2 = QVBoxLayout() # "Play Playlist" button and hbox2
+            self.hbox2 = QHBoxLayout() # Search bar and "clear" button
+
+            self.vbox2.setSpacing(5)
+
             self.grid.addWidget(title, 0, 0, alignment = Qt.AlignCenter)
             self.grid.addWidget(desc, 1, 0, alignment = Qt.AlignCenter)
             self.grid.addWidget(img, 2, 0, alignment = Qt.AlignCenter)
-            self.grid.addWidget(play, 3, 0, alignment = Qt.AlignCenter)
+            self.grid.addLayout(self.vbox2, 3, 0)
+            self.vbox2.addWidget(play, alignment = Qt.AlignCenter)
+            self.vbox2.addLayout(self.hbox2)
+            self.hbox2.addWidget(self.search)
+            self.hbox2.addWidget(clear)
             self.grid.addWidget(self.tracks, 4, 0)
 
             for i in range(len(user_playlists['tracks'][playlist[2]])):
                 track = user_playlists['tracks'][playlist[2]][i]
                 track_name = "►  " + track[0]
                 track_id = track[1]
-                item = QListWidgetItem(track_name, self.tracks)
+                track_artists = track[2]
+                item = QListWidgetItem(track_name + " – " + ", ".join(track_artists), self.tracks)
                 self.tracks.addItem(item)
 
             self.tracks.itemDoubleClicked.connect(self.make_play_from_playlist(playlist))
@@ -435,6 +460,8 @@ class MainWindow(QMainWindow):
             helper['widgets'].append(desc)
             helper['widgets'].append(img)
             helper['widgets'].append(play)
+            helper['widgets'].append(self.search)
+            helper['widgets'].append(clear)
         return display_playlist_info
 
     def eventFilter(self, source, e):
@@ -443,6 +470,31 @@ class MainWindow(QMainWindow):
         elif e.type() == QEvent.Leave:
             source.setText(self.desc_text[:70] + "...")
         return False
+
+    def match(self, keywords, track):
+        return (keywords in track) or all(keyword in track for keyword in keywords.split())
+
+    @pyqtSlot()
+    def make_search_tracks(self, playlist):
+        def search_tracks():
+            tracks = user_playlists['tracks'][playlist[2]]
+            self.tracks.clear()
+            for i in range(len(tracks)):
+                if self.match(self.search.text().lower(), (tracks[i][0] + " " + ", ".join(tracks[i][2])).lower()):
+                    item = QListWidgetItem("►  " + tracks[i][0] + " — " + ", ".join(tracks[i][2]))
+                    self.tracks.addItem(item)
+        return search_tracks
+
+    @pyqtSlot()
+    def make_clear_search(self, playlist):
+        def clear_search():
+            tracks = user_playlists['tracks'][playlist[2]]
+            self.tracks.clear()
+            for i in range(len(tracks)):
+                item = QListWidgetItem("►  " + tracks[i][0] + " – " + ", ".join(tracks[i][2]))
+                self.tracks.addItem(item)
+            self.search.clear()
+        return clear_search
 
     @pyqtSlot()
     def make_play_playlist(self, playlist):
