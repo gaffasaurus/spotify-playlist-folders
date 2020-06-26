@@ -83,10 +83,13 @@ def load_playlist_tracks():
         while True:
             for j in range(len(results['items'])):
                 track = results['items'][j]['track']
+                if track == None:
+                    break
                 track_name = track['name']
                 track_id = track['id']
-                track_info = (track_name, track_id)
-                tracks.append(track_info)
+                if track_id != None:
+                    track_info = (track_name, track_id)
+                    tracks.append(track_info)
             increment += 50
             results = spotify.playlist_tracks(user_playlists['playlists'][i][2], limit = 50, offset = increment)
             if stop or len(results['items']) == 0:
@@ -113,7 +116,6 @@ def load_images():
 #        if i % 5 == 0:
         sys.stdout.flush()
         sys.stdout.write('\r')
-        # the exact output you're looking for:
         sys.stdout.write(str(i+1) + "/" + str(len(user_playlists['playlists'])) + " images loaded")
     print("\nImages loaded\n")
     print("Launching program...")
@@ -232,6 +234,8 @@ class MainWindow(QMainWindow):
         self.widget = QWidget()
         self.grid = QGridLayout()
 
+        self.setWindowState(Qt.WindowMaximized)
+
         self.widget.setLayout(self.grid)
 
         self.setCentralWidget(self.widget)
@@ -243,8 +247,8 @@ class MainWindow(QMainWindow):
         self.playlists = ListWidget()
         self.folders = TreeWidget()
 
-        self.playlists.setMaximumWidth(425)
-        self.folders.setMaximumWidth(425)
+        self.playlists.setMaximumWidth(530)
+        self.folders.setMaximumWidth(530)
 
         self.folders.setHeaderLabels(["Drag playlists from above into the folders"])
 
@@ -274,6 +278,7 @@ class MainWindow(QMainWindow):
 
         self.folders.itemDoubleClicked.connect(self.make_display_playlist_info(1))
 
+        update_playlists = QPushButton("Update Playlists")
         playlists_header = QLabel("My Playlists:")
         folders_header = QLabel("My Folders:")
 
@@ -281,12 +286,15 @@ class MainWindow(QMainWindow):
         delete_folder = QPushButton("Remove Item")
         rename_folder = QPushButton("Rename Folder")
 
+        update_playlists.clicked.connect(self.updatePlaylists)
+
         add_folder.clicked.connect(self.addFolder)
         delete_folder.clicked.connect(self.removeItem)
         rename_folder.clicked.connect(self.renameFolder)
 
         self.hbox = QHBoxLayout()
 
+        self.grid.addWidget(update_playlists, 0, 1, alignment = Qt.AlignCenter)
         self.grid.addWidget(playlists_header, 1, 1)
         self.grid.addWidget(self.playlists, 2, 1)
         self.grid.addWidget(folders_header, 3, 1)
@@ -305,11 +313,21 @@ class MainWindow(QMainWindow):
         # button.move(190, 65)
 
         self.setWindowTitle('Spotify Playlist Folders')
-        self.setGeometry(90, 50, 1100, 800)
+        self.setGeometry(165, 20, 950, 700)
 
     def removeWidgets(self, widgets):
         for i in range(len(widgets)):
             widgets[i].setParent(None)
+
+    def updatePlaylists(self):
+        user_playlists['playlists'] = load_user_playlists()
+        user_playlists['tracks'] = load_playlist_tracks()
+        user_playlists['images'] = load_images()
+        self.playlists.clear()
+        for i in range(len(user_playlists['playlists'])): #Show user playlists
+            item = QListWidgetItem(user_playlists['playlists'][i][0], self.playlists)
+            item.setTextAlignment(Qt.AlignCenter)
+            self.playlists.addItem(item)
 
     def make_display_playlist_info(self, num):
         def display_playlist_info():
@@ -341,8 +359,15 @@ class MainWindow(QMainWindow):
 
             playlist = user_playlists['playlists'][ix]
             image = user_playlists['images'][ix]
-            title = QLabel(playlist[0])
+            title_text = ""
+            for i in range(len(playlist[0].split())):
+                title_text += playlist[0].split()[i] + " "
+                if i > 0 and i % 7 == 0:
+                    title_text += "\n"
+            title = QLabel(title_text)
+            title.setAlignment(Qt.AlignCenter)
             title.setFont(QFont('Arial', 24))
+
             self.desc_text = ""
             for i in range(len(list(playlist[1]))):
                 self.desc_text += list(playlist[1])[i]
@@ -363,7 +388,7 @@ class MainWindow(QMainWindow):
             play.clicked.connect(self.make_play_playlist(playlist))
 
             self.tracks = QListWidget()
-            self.tracks.setMaximumWidth(425)
+            self.tracks.setMaximumWidth(530)
             self.tracks.setSpacing(5)
 
             self.grid.addWidget(title, 0, 0, alignment = Qt.AlignCenter)
