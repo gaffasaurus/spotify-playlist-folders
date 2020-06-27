@@ -510,7 +510,7 @@ class MainWindow(QMainWindow):
             id = playlist[2]
             try:
                 spotify.start_playback(spotify.devices()['devices'][0]['id'], "spotify:playlist:" + id, offset = {"position": track_num})
-            except:
+            except SpotifyException:
                 msgBox = QMessageBox()
                 msgBox.setIcon(QMessageBox.Critical)
                 msgBox.setStandardButtons(QMessageBox.Ok)
